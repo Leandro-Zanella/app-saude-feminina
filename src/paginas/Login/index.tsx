@@ -15,6 +15,7 @@ export function TelaLogin() {
     definirCarregando(true);
     try {
       console.log('Login:', email, senha);
+      roteador.replace('/hoje');
     } finally {
       definirCarregando(false);
     }

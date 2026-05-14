@@ -1,8 +1,22 @@
+import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import type { ReactNode } from 'react';
 import type { PressableProps, TextInputProps, TextStyle, ViewStyle } from 'react-native';
 
 export type PropriedadesLogo = {
   tamanhoIcone?: number;
+};
+
+export type PropriedadesCabecalhoLogado = {
+  tamanhoIcone?: number;
+};
+
+export type PropriedadesTituloPagina = {
+  titulo: string;
+  subtitulo?: string;
+};
+
+export type PropriedadesBarraNavegacao = BottomTabBarProps & {
+  aoPressionarBotaoCentral?: () => void;
 };
 
 export type PropriedadesCartao = {

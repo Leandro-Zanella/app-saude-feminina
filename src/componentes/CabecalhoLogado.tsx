@@ -1,40 +1,50 @@
 import { FontAwesome5 } from '@expo/vector-icons';
 import { StyleSheet, Text, View } from 'react-native';
 import { Cores, Espacamento, RaioBorda } from '@/src/tema';
-import type { PropriedadesLogo } from '@/src/tipos';
+import type { PropriedadesCabecalhoLogado } from '@/src/tipos';
 
-export function Logo({ tamanhoIcone = 36 }: PropriedadesLogo) {
+export function CabecalhoLogado({ tamanhoIcone = 18 }: PropriedadesCabecalhoLogado) {
   return (
     <View style={estilos.container}>
       <View style={[estilos.circuloIcone, { width: tamanhoIcone * 2, height: tamanhoIcone * 2 }]}>
         <FontAwesome5 name="running" size={tamanhoIcone} color={Cores.branco} />
       </View>
-      <Text style={estilos.nomeMarca}>Flor</Text>
-      <Text style={estilos.subtitulo}>Saúde & Bem-estar feminino</Text>
+      <View style={estilos.areaTexto}>
+        <Text style={estilos.nomeMarca}>Flor</Text>
+        <Text style={estilos.subtitulo}>Saúde & Bem-estar feminino</Text>
+      </View>
     </View>
   );
 }
 
 const estilos = StyleSheet.create({
   container: {
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: Espacamento.xs,
+    gap: Espacamento.md,
+    backgroundColor: Cores.branco,
+    paddingHorizontal: Espacamento.lg,
+    paddingVertical: Espacamento.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Cores.bordaCartao,
   },
   circuloIcone: {
     backgroundColor: Cores.rosa,
-    borderRadius: RaioBorda.lg,
+    borderRadius: RaioBorda.md,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: Espacamento.sm,
+  },
+  areaTexto: {
+    flex: 1,
   },
   nomeMarca: {
-    fontSize: 32,
+    fontSize: 18,
     fontWeight: '700',
     color: Cores.textoPrimario,
-    letterSpacing: -0.5,
+    lineHeight: 22,
   },
   subtitulo: {
-    fontSize: 13,
+    fontSize: 11,
     color: Cores.textoSecundario,
   },
 });
