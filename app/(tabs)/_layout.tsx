@@ -1,35 +1,45 @@
 import { Tabs } from 'expo-router';
-import React from 'react';
+import { StyleSheet, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { BarraNavegacao, CabecalhoLogado } from '@/src/componentes';
+import { Cores } from '@/src/tema';
 
-import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+export default function LayoutTabs() {
+  const aoPressionarBotaoCentral = () => {
+    // TODO: abrir modal de adicionar registro (sintoma, humor, etc.)
+    console.log('Botão central pressionado');
+  };
 
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        headerShown: false,
-        tabBarButton: HapticTab,
-      }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="explore"
-        options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
-        }}
-      />
-    </Tabs>
+    <SafeAreaView style={estilos.areaSegura} edges={['top']}>
+      <CabecalhoLogado />
+      <View style={estilos.areaConteudo}>
+        <Tabs
+          screenOptions={{ headerShown: false }}
+          tabBar={(propriedadesTabBar) => (
+            <BarraNavegacao
+              {...propriedadesTabBar}
+              aoPressionarBotaoCentral={aoPressionarBotaoCentral}
+            />
+          )}
+        >
+          <Tabs.Screen name="hoje" options={{ title: 'Hoje' }} />
+          <Tabs.Screen name="ciclo" options={{ title: 'Ciclo' }} />
+          <Tabs.Screen name="conteudos" options={{ title: 'Conteúdos' }} />
+          <Tabs.Screen name="perfil" options={{ title: 'Perfil' }} />
+        </Tabs>
+      </View>
+    </SafeAreaView>
   );
 }
+
+const estilos = StyleSheet.create({
+  areaSegura: {
+    flex: 1,
+    backgroundColor: Cores.branco,
+  },
+  areaConteudo: {
+    flex: 1,
+    backgroundColor: Cores.fundo,
+  },
+});
