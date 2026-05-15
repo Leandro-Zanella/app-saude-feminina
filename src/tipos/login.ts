@@ -9,4 +9,5 @@ export type PropriedadesFormularioLogin = {
   aoEnviar: (dados: DadosLogin) => void | Promise<void>;
   aoClicarEsqueciSenha: () => void;
   carregando?: boolean;
+  erroGeral?: string;
 };

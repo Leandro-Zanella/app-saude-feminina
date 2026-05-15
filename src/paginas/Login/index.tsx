@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Cartao, LinkTexto } from '@/src/componentes';
+import { useUsuario } from '@/src/contextos';
 import { LayoutAutenticacao } from '@/src/paginas/_compartilhado/LayoutAutenticacao';
 import { Cores, Espacamento, Tipografia } from '@/src/tema';
 import type { DadosLogin } from '@/src/tipos';
@@ -9,15 +10,16 @@ import { FormularioLogin } from './FormularioLogin';
 
 export function TelaLogin() {
   const roteador = useRouter();
-  const [carregando, definirCarregando] = useState(false);
+  const { entrar, carregando } = useUsuario();
+  const [erroGeral, definirErroGeral] = useState<string | undefined>(undefined);
 
-  const aoEnviar = async ({ email, senha }: DadosLogin) => {
-    definirCarregando(true);
+  const aoEnviar = async (dados: DadosLogin) => {
+    definirErroGeral(undefined);
     try {
-      console.log('Login:', email, senha);
+      await entrar(dados);
       roteador.replace('/hoje');
-    } finally {
-      definirCarregando(false);
+    } catch (erro) {
+      definirErroGeral(erro instanceof Error ? erro.message : 'Não foi possível entrar.');
     }
   };
 
@@ -40,6 +42,7 @@ export function TelaLogin() {
           aoEnviar={aoEnviar}
           aoClicarEsqueciSenha={() => roteador.push('/recuperar-senha')}
           carregando={carregando}
+          erroGeral={erroGeral}
         />
       </Cartao>
     </LayoutAutenticacao>

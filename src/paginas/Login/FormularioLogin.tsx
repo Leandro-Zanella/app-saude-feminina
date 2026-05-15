@@ -1,10 +1,15 @@
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { Botao, CampoTexto, LinkTexto } from '@/src/componentes';
-import { Espacamento } from '@/src/tema';
+import { Cores, Espacamento } from '@/src/tema';
 import type { ErrosLogin, PropriedadesFormularioLogin } from '@/src/tipos';
 
-export function FormularioLogin({ aoEnviar, aoClicarEsqueciSenha, carregando = false, }: PropriedadesFormularioLogin) {
+export function FormularioLogin({
+  aoEnviar,
+  aoClicarEsqueciSenha,
+  carregando = false,
+  erroGeral,
+}: PropriedadesFormularioLogin) {
   const [email, definirEmail] = useState('');
   const [senha, definirSenha] = useState('');
   const [erros, definirErros] = useState<ErrosLogin>({});
@@ -55,6 +60,8 @@ export function FormularioLogin({ aoEnviar, aoClicarEsqueciSenha, carregando = f
         <LinkTexto texto="Esqueci minha senha" onPress={aoClicarEsqueciSenha} />
       </View>
 
+      {erroGeral ? <Text style={estilos.mensagemErroGeral}>{erroGeral}</Text> : null}
+
       <Botao titulo="Entrar" onPress={lidarComEnvio} carregando={carregando} />
     </View>
   );
@@ -66,5 +73,10 @@ const estilos = StyleSheet.create({
   },
   linhaEsqueciSenha: {
     alignItems: 'flex-end',
+  },
+  mensagemErroGeral: {
+    color: Cores.erro,
+    fontSize: 13,
+    textAlign: 'center',
   },
 });
