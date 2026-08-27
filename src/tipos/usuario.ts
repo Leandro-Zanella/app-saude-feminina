@@ -13,7 +13,8 @@ export type ValorContextoUsuario = {
   token: string | null;
   autenticado: boolean;
   carregando: boolean;
+  restaurando: boolean;
   entrar: (dados: DadosLogin) => Promise<void>;
   cadastrar: (dados: DadosRegistro) => Promise<void>;
-  sair: () => void;
+  sair: () => Promise<void>;
 };

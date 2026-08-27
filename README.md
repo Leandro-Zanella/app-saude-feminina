@@ -102,15 +102,19 @@ src/
 ├── contextos/                    # estado global por contexto React
 │   ├── ContextoUsuario.tsx       # Provider + hook useUsuario (consome a API)
 │   └── index.ts
-├── servicos/                     # única camada que conhece a API
+├── servicos/                     # única camada que conhece a origem dos dados
 │   ├── configuracao.ts           # URL_BASE_API + montarUrlMidia
 │   ├── clienteHttp.ts            # fetch com Bearer, timeout e ErroApi
 │   ├── autenticacao.ts           # autenticar, registrar, encerrarSessao
 │   ├── artigos.ts                # listarArtigos, obterArtigo
+│   ├── ciclos.ts                 # listarCiclos, registrarCiclo, removerCiclo
 │   ├── sessao.ts                 # guarda o token
+│   ├── mock/                     # dados locais, trocáveis pela API depois
+│   │   └── ciclos.ts             # AsyncStorage + semeadura inicial
 │   └── index.ts
 ├── utilitarios/                  # funções puras sem dependência de UI
 │   ├── formatacao.ts             # formatarData
+│   ├── ciclo.ts                  # aritmética de datas + calcularPrevisao
 │   └── index.ts
 ├── paginas/                      # telas + formulários por área
 │   ├── _compartilhado/
@@ -357,6 +361,71 @@ try {
 
 ---
 
+## Calendário de ciclo
+
+A tela de Ciclo é a única parte do app que hoje **não** consome a API: os
+registros ficam no dispositivo, via `AsyncStorage`.
+
+### A costura para trocar depois
+
+`src/servicos/ciclos.ts` é a interface pública (`listarCiclos`,
+`registrarCiclo`, `removerCiclo`) e hoje delega para
+`src/servicos/mock/ciclos.ts`. Quando a API tiver as rotas de ciclo, só esse
+arquivo muda — a tela importa de `@/src/servicos` e não sabe de onde vem o
+dado.
+
+Na primeira abertura o mock **semeia 3 ciclos** relativos à data de hoje, para
+a previsão já ter média (ela precisa de 2 registros) e a tela nunca aparecer
+vazia.
+
+### Datas como texto
+
+Tudo é `'YYYY-MM-DD'`, nunca `Date`. Não há fuso para atrapalhar, a ordenação
+é comparação de texto, e é exatamente o formato de chave que o `markedDates`
+do `react-native-calendars` espera — zero conversão entre camadas.
+
+### Registro em dois toques
+
+Não há date picker: `onDayPress` do calendário devolve o dia já em
+`'YYYY-MM-DD'`. O primeiro toque marca o início, o segundo o fim. Tocar num
+dia anterior ao início selecionado recomeça a seleção.
+
+### Cálculo da previsão
+
+Em `src/utilitarios/ciclo.ts`, funções puras:
+
+```text
+duracaoMedia  = média(fim − início + 1) dos registros fechados   → padrão 5
+cicloMedio    = média(início[i] − início[i+1]) se ≥ 2 registros  → padrão 28
+próximoInício = últimoInício + cicloMedio
+próximoFim    = próximoInício + duracaoMedia − 1
+```
+
+O ciclo é medido **início a início**, como na definição clínica — não do fim de
+um período ao início do seguinte.
+
+Três detalhes que evitam resultado absurdo:
+
+- só entram no cálculo registros com `inicio <= hoje`; um ciclo que não
+  aconteceu não pode informar previsão;
+- se o último registro é antigo, `próximoInício` avança de `cicloMedio` em
+  `cicloMedio` até passar de hoje, então a previsão nunca aparece no passado;
+- `cicloMedio` tem piso de 15 dias, o que descarta dado degenerado (dois
+  registros no mesmo dia) e garante que o laço acima termine.
+
+`historicoSuficiente` é `false` quando caiu no padrão de 28 dias, e a tela
+avisa que é estimativa.
+
+### Cores no calendário
+
+| Cor | Significado |
+|---|---|
+| `Cores.rosa` | período registrado |
+| `Cores.rosaBotaoDesabilitado` | período previsto |
+| `Cores.rosaBotaoPressionado` | início aguardando o segundo toque |
+
+---
+
 ## Como adicionar uma nova página
 
 1. Crie a pasta `src/paginas/<Nome>/` com `index.tsx` exportando o componente
@@ -395,10 +464,12 @@ try {
 
 - [ ] Guarda de rota: redirecionar para `/login` quando `!autenticado` em
   `(tabs)`
-- [ ] Botão "Sair" na tela Perfil consumindo `useUsuario().sair`
+- [x] Botão "Sair" na tela Perfil consumindo `useUsuario().sair`
 - [ ] Persistência do token com `expo-secure-store` (hoje só em memória)
 - [x] Integração real do login/registro com API
-- [ ] Tela de Conteúdos consumindo `listarArtigos()`
-- [ ] Renderizar `conteudoHtml` (lib de HTML ou WebView)
+- [x] Tela de Conteúdos consumindo `listarArtigos()`
+- [x] Renderizar `conteudoHtml` (WebView no nativo, iframe no web)
+- [x] Calendário de ciclo com registro local e previsão
+- [ ] Trocar `servicos/mock/ciclos.ts` pela API quando ela tiver as rotas de ciclo
 - [ ] Implementar conteúdo das telas: Hoje, Ciclo, Conteúdos, Perfil
 - [ ] Modal de "adicionar registro" acionado pelo FAB central

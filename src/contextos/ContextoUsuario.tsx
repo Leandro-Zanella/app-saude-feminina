@@ -1,5 +1,5 @@
-import { createContext, ReactNode, useCallback, useContext, useMemo, useState } from 'react';
-import { autenticar, encerrarSessao, registrar } from '@/src/servicos';
+import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { autenticar, encerrarSessao, registrar, restaurarSessao } from '@/src/servicos';
 import type { DadosLogin, DadosRegistro, Usuario, ValorContextoUsuario } from '@/src/tipos';
 
 const ContextoUsuario = createContext<ValorContextoUsuario | null>(null);
@@ -12,6 +12,19 @@ export function ProvedorUsuario({ children }: PropriedadesProvedorUsuario) {
   const [usuario, definirUsuario] = useState<Usuario | null>(null);
   const [token, definirToken] = useState<string | null>(null);
   const [carregando, definirCarregando] = useState(false);
+  const [restaurando, definirRestaurando] = useState(true);
+
+  useEffect(() => {
+    restaurarSessao()
+      .then((sessao) => {
+        if (sessao === null) {
+          return;
+        }
+        definirUsuario(sessao.usuario);
+        definirToken(sessao.token);
+      })
+      .finally(() => definirRestaurando(false));
+  }, []);
 
   const entrar = useCallback(async (dados: DadosLogin) => {
     definirCarregando(true);
@@ -36,8 +49,8 @@ export function ProvedorUsuario({ children }: PropriedadesProvedorUsuario) {
     }
   }, []);
 
-  const sair = useCallback(() => {
-    encerrarSessao();
+  const sair = useCallback(async () => {
+    await encerrarSessao();
     definirUsuario(null);
     definirToken(null);
   }, []);
@@ -48,11 +61,12 @@ export function ProvedorUsuario({ children }: PropriedadesProvedorUsuario) {
       token,
       autenticado: usuario !== null,
       carregando,
+      restaurando,
       entrar,
       cadastrar,
       sair,
     }),
-    [usuario, token, carregando, entrar, cadastrar, sair],
+    [usuario, token, carregando, restaurando, entrar, cadastrar, sair],
   );
 
   return <ContextoUsuario.Provider value={valor}>{children}</ContextoUsuario.Provider>;

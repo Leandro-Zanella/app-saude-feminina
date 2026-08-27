@@ -1,5 +1,6 @@
 export * from './api';
 export * from './artigo';
+export * from './ciclo';
 export * from './componentes';
 export * from './login';
 export * from './recuperarSenha';

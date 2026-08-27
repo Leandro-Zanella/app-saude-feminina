@@ -1,5 +1,5 @@
 import { requisitar } from './clienteHttp';
-import { definirToken } from './sessao';
+import { guardarSessao, limparSessao } from './sessao';
 import type {
   CorpoLogin,
   CorpoRegistro,
@@ -23,12 +23,14 @@ export async function autenticar({ email, senha }: DadosLogin): Promise<SessaoAu
     corpo,
   });
 
-  definirToken(resposta.token);
-
-  return {
+  const sessao: SessaoAutenticada = {
     usuario: paraUsuario(resposta.user),
     token: resposta.token,
   };
+
+  await guardarSessao(sessao);
+
+  return sessao;
 }
 
 export async function registrar({ nome, email, senha }: DadosRegistro): Promise<Usuario> {
@@ -48,8 +50,8 @@ export async function registrar({ nome, email, senha }: DadosRegistro): Promise<
   return paraUsuario(resposta);
 }
 
-export function encerrarSessao(): void {
-  definirToken(null);
+export async function encerrarSessao(): Promise<void> {
+  await limparSessao();
 }
 
 function paraUsuario(resposta: RespostaUsuario): Usuario {
