@@ -3,6 +3,8 @@ export { Botao } from './Botao';
 export { CabecalhoLogado } from './CabecalhoLogado';
 export { CampoTexto } from './CampoTexto';
 export { Cartao } from './Cartao';
+export { CartaoArtigo } from './CartaoArtigo';
 export { LinkTexto } from './LinkTexto';
 export { Logo } from './Logo';
 export { TituloPagina } from './TituloPagina';
+export { VisualizadorHtml } from './VisualizadorHtml';

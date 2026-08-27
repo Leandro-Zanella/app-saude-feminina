@@ -147,3 +147,11 @@ vite.config.ts.timestamp-*
 
 expo-env.d.ts
 # @end expo-cli
+
+# Expo
+.expo/
+web-build/
+
+# Editores
+.idea/
+.vscode/

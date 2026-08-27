@@ -11,4 +11,5 @@ export type ErrosRegistro = Partial<Record<CamposRegistroComConfirmacao, string>
 export type PropriedadesFormularioRegistro = {
   aoEnviar: (dados: DadosRegistro) => void | Promise<void>;
   carregando?: boolean;
+  erroGeral?: string;
 };
