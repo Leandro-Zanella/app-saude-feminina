@@ -1,6 +1,7 @@
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import type { ReactNode } from 'react';
-import type { PressableProps, TextInputProps, TextStyle, ViewStyle } from 'react-native';
+import type { PressableProps, StyleProp, TextInputProps, TextStyle, ViewStyle } from 'react-native';
+import type { Artigo } from './artigo';
 
 export type PropriedadesLogo = {
   tamanhoIcone?: number;
@@ -21,7 +22,7 @@ export type PropriedadesBarraNavegacao = BottomTabBarProps & {
 
 export type PropriedadesCartao = {
   children: ReactNode;
-  estiloAdicional?: ViewStyle;
+  estiloAdicional?: StyleProp<ViewStyle>;
 };
 
 export type PropriedadesCampoTexto = TextInputProps & {
@@ -44,4 +45,13 @@ export type PropriedadesLinkTexto = Omit<PressableProps, 'children' | 'style'> &
 export type PropriedadesLayoutAutenticacao = {
   children: ReactNode;
   rodape?: ReactNode;
+};
+
+export type PropriedadesCartaoArtigo = {
+  artigo: Artigo;
+  aoPressionar: () => void;
+};
+
+export type PropriedadesVisualizadorHtml = {
+  html: string;
 };

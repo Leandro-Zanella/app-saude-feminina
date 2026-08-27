@@ -1,15 +1,6 @@
 import { createContext, ReactNode, useCallback, useContext, useMemo, useState } from 'react';
-import type { DadosLogin, Usuario, ValorContextoUsuario } from '@/src/tipos';
-
-const USUARIO_MOCK = {
-  email: 'teste@teste.com',
-  senha: '123123',
-  dados: {
-    id: '1',
-    nome: 'Maria Silva',
-    email: 'teste@teste.com',
-  } satisfies Usuario,
-};
+import { autenticar, encerrarSessao, registrar } from '@/src/servicos';
+import type { DadosLogin, DadosRegistro, Usuario, ValorContextoUsuario } from '@/src/tipos';
 
 const ContextoUsuario = createContext<ValorContextoUsuario | null>(null);
 
@@ -19,37 +10,49 @@ type PropriedadesProvedorUsuario = {
 
 export function ProvedorUsuario({ children }: PropriedadesProvedorUsuario) {
   const [usuario, definirUsuario] = useState<Usuario | null>(null);
+  const [token, definirToken] = useState<string | null>(null);
   const [carregando, definirCarregando] = useState(false);
 
-  const entrar = useCallback(async ({ email, senha }: DadosLogin) => {
+  const entrar = useCallback(async (dados: DadosLogin) => {
     definirCarregando(true);
     try {
-      await new Promise((resolver) => setTimeout(resolver, 400));
+      const sessao = await autenticar(dados);
+      definirUsuario(sessao.usuario);
+      definirToken(sessao.token);
+    } finally {
+      definirCarregando(false);
+    }
+  }, []);
 
-      if (email === USUARIO_MOCK.email && senha === USUARIO_MOCK.senha) {
-        definirUsuario(USUARIO_MOCK.dados);
-        return;
-      }
-
-      throw new Error('E-mail ou senha incorretos.');
+  const cadastrar = useCallback(async (dados: DadosRegistro) => {
+    definirCarregando(true);
+    try {
+      await registrar(dados);
+      const sessao = await autenticar({ email: dados.email, senha: dados.senha });
+      definirUsuario(sessao.usuario);
+      definirToken(sessao.token);
     } finally {
       definirCarregando(false);
     }
   }, []);
 
   const sair = useCallback(() => {
+    encerrarSessao();
     definirUsuario(null);
+    definirToken(null);
   }, []);
 
   const valor = useMemo<ValorContextoUsuario>(
     () => ({
       usuario,
+      token,
       autenticado: usuario !== null,
       carregando,
       entrar,
+      cadastrar,
       sair,
     }),
-    [usuario, carregando, entrar, sair],
+    [usuario, token, carregando, entrar, cadastrar, sair],
   );
 
   return <ContextoUsuario.Provider value={valor}>{children}</ContextoUsuario.Provider>;

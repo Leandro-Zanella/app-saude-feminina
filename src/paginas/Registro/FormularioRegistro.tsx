@@ -1,10 +1,14 @@
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { Botao, CampoTexto } from '@/src/componentes';
-import { Espacamento } from '@/src/tema';
+import { Cores, Espacamento } from '@/src/tema';
 import type { ErrosRegistro, PropriedadesFormularioRegistro } from '@/src/tipos';
 
-export function FormularioRegistro({ aoEnviar, carregando = false, }: PropriedadesFormularioRegistro) {
+export function FormularioRegistro({
+  aoEnviar,
+  carregando = false,
+  erroGeral,
+}: PropriedadesFormularioRegistro) {
   const [nome, definirNome] = useState('');
   const [email, definirEmail] = useState('');
   const [senha, definirSenha] = useState('');
@@ -90,6 +94,8 @@ export function FormularioRegistro({ aoEnviar, carregando = false, }: Propriedad
         mensagemErro={erros.confirmarSenha}
       />
 
+      {erroGeral ? <Text style={estilos.mensagemErroGeral}>{erroGeral}</Text> : null}
+
       <Botao titulo="Criar conta" onPress={lidarComEnvio} carregando={carregando} />
     </View>
   );
@@ -98,5 +104,10 @@ export function FormularioRegistro({ aoEnviar, carregando = false, }: Propriedad
 const estilos = StyleSheet.create({
   container: {
     gap: Espacamento.lg,
+  },
+  mensagemErroGeral: {
+    color: Cores.erro,
+    fontSize: 13,
+    textAlign: 'center',
   },
 });

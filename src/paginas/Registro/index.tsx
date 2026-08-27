@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Cartao, LinkTexto } from '@/src/componentes';
+import { useUsuario } from '@/src/contextos';
 import { LayoutAutenticacao } from '@/src/paginas/_compartilhado/LayoutAutenticacao';
 import { Cores, Espacamento, Tipografia } from '@/src/tema';
 import type { DadosRegistro } from '@/src/tipos';
@@ -9,14 +10,16 @@ import { FormularioRegistro } from './FormularioRegistro';
 
 export function TelaRegistro() {
   const roteador = useRouter();
-  const [carregando, definirCarregando] = useState(false);
+  const { cadastrar, carregando } = useUsuario();
+  const [erroGeral, definirErroGeral] = useState<string | undefined>(undefined);
 
   const aoEnviar = async (dados: DadosRegistro) => {
-    definirCarregando(true);
+    definirErroGeral(undefined);
     try {
-      console.log('Cadastro:', dados);
-    } finally {
-      definirCarregando(false);
+      await cadastrar(dados);
+      roteador.replace('/hoje');
+    } catch (erro) {
+      definirErroGeral(erro instanceof Error ? erro.message : 'Não foi possível criar sua conta.');
     }
   };
 
@@ -35,7 +38,7 @@ export function TelaRegistro() {
           <Text style={estilos.subtitulo}>Comece a cuidar da sua saúde hoje</Text>
         </View>
 
-        <FormularioRegistro aoEnviar={aoEnviar} carregando={carregando} />
+        <FormularioRegistro aoEnviar={aoEnviar} carregando={carregando} erroGeral={erroGeral} />
       </Cartao>
     </LayoutAutenticacao>
   );

@@ -4,8 +4,9 @@ Aplicativo mobile para acompanhamento do ciclo menstrual, sintomas, conteúdos
 educativos e bem-estar feminino. Construído em **React Native + Expo Router**
 com TypeScript estrito e convenções em português.
 
-> Status: em desenvolvimento. Login mockado, telas de autenticação prontas e
-> esqueleto da área logada (tabs) com placeholders.
+> Status: em desenvolvimento. Login e cadastro integrados com a
+> [API Spring](../api-saude-feminina), consumo de artigos pronto em
+> `src/servicos/`, e esqueleto da área logada (tabs) com placeholders.
 
 ---
 
@@ -37,16 +38,26 @@ npm run web        # versão web
 npm run lint       # ESLint via Expo
 ```
 
-### Credenciais de teste (mock)
+### A API precisa estar no ar
 
-A autenticação está **mockada**. Use:
+O login não é mais mockado. Antes de abrir o app, suba o banco e a API:
 
+```bash
+cd ../api-saude-feminina
+docker compose up -d      # Postgres na 5432
+./mvnw spring-boot:run    # API na 8080
 ```
-e-mail: teste@teste.com
-senha:  123123
+
+Depois crie uma conta pela própria tela de cadastro do app, ou via curl:
+
+```bash
+curl -X POST http://localhost:8080/api/user/register \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"Maria Souza","email":"maria@saudefeminina.com","password":"maria123","userRole":"USER"}'
 ```
 
-Qualquer outra combinação retorna `"E-mail ou senha incorretos."`.
+O app resolve o endereço da API sozinho por plataforma — veja
+[Camada de serviços](#camada-de-serviços).
 
 ---
 
@@ -89,7 +100,17 @@ src/
 │   ├── TituloPagina.tsx          # placeholder centralizado
 │   └── index.ts
 ├── contextos/                    # estado global por contexto React
-│   ├── ContextoUsuario.tsx       # Provider + hook useUsuario (com mock)
+│   ├── ContextoUsuario.tsx       # Provider + hook useUsuario (consome a API)
+│   └── index.ts
+├── servicos/                     # única camada que conhece a API
+│   ├── configuracao.ts           # URL_BASE_API + montarUrlMidia
+│   ├── clienteHttp.ts            # fetch com Bearer, timeout e ErroApi
+│   ├── autenticacao.ts           # autenticar, registrar, encerrarSessao
+│   ├── artigos.ts                # listarArtigos, obterArtigo
+│   ├── sessao.ts                 # guarda o token
+│   └── index.ts
+├── utilitarios/                  # funções puras sem dependência de UI
+│   ├── formatacao.ts             # formatarData
 │   └── index.ts
 ├── paginas/                      # telas + formulários por área
 │   ├── _compartilhado/
@@ -236,31 +257,103 @@ via hook `useUsuario()`.
 ### API
 
 ```ts
-const { usuario, autenticado, carregando, entrar, sair } = useUsuario();
+const { usuario, token, autenticado, carregando, entrar, cadastrar, sair } = useUsuario();
 ```
 
 | Campo | Tipo | Descrição |
 |---|---|---|
-| `usuario` | `Usuario \| null` | Dados do usuário logado |
+| `usuario` | `Usuario \| null` | Dados do usuário logado, vindos do login |
+| `token` | `string \| null` | JWT da sessão |
 | `autenticado` | `boolean` | Atalho para `usuario !== null` |
-| `carregando` | `boolean` | `true` durante chamada de `entrar()` |
-| `entrar(dados)` | `Promise<void>` | Faz login. Lança erro se inválido. |
-| `sair()` | `void` | Limpa o usuário do estado |
+| `carregando` | `boolean` | `true` durante `entrar()` ou `cadastrar()` |
+| `entrar(dados)` | `Promise<void>` | Faz login. Lança `ErroApi` se inválido. |
+| `cadastrar(dados)` | `Promise<void>` | Registra e já entra. Lança `ErroApi` no 409. |
+| `sair()` | `void` | Descarta usuário e token |
 
 O `<ProvedorUsuario>` é colocado no `app/_layout.tsx`, dentro do
 `SafeAreaProvider`.
 
-### Mock de autenticação
+### Cadastro
 
-Hoje o `entrar` valida com um `if` hardcoded contra o usuário de teste
-(`teste@teste.com` / `123123`). Todas as linhas relacionadas estão marcadas
-com `// MOCK:` para serem facilmente trocadas pela integração com a API
-real.
+`cadastrar(dados)` faz duas chamadas: `POST /api/user/register` e, em
+seguida, `POST /api/user/login` — porque o registro devolve o usuário, mas
+não devolve token. O resultado é a pessoa já logada ao final do cadastro.
+
+O `userRole` é fixo em `USER` dentro de `src/servicos/autenticacao.ts`: o
+papel nunca vem da tela. Contas `ADMIN` são criadas pela gestão web.
 
 ### Persistência
 
 O estado fica apenas em memória — ao fechar o app, a sessão é perdida. Quando
 houver backend, persistir token com `expo-secure-store` é a recomendação.
+
+---
+
+## Camada de serviços
+
+`src/servicos/` é a **única** parte do app que conhece a API. Telas e contextos
+falam só com essas funções, então trocar endpoint, formato de erro ou host não
+vaza para o resto do código.
+
+### Funções
+
+| Função | Rota | Devolve |
+|---|---|---|
+| `autenticar({ email, senha })` | `POST /api/user/login` | `SessaoAutenticada` (`{ usuario, token }`) |
+| `registrar({ nome, email, senha })` | `POST /api/user/register` | `Usuario` |
+| `encerrarSessao()` | — | `void` (descarta o token) |
+| `listarArtigos()` | `GET /api/article` | `Artigo[]` |
+| `obterArtigo(id)` | `GET /api/article/{id}` | `Artigo` |
+
+`autenticar` guarda o token em `sessao.ts`, então as chamadas seguintes já
+saem com o header `Authorization: Bearer ...` automaticamente.
+
+### Tradução de nomes
+
+A API responde em inglês (`title`, `contentHtml`, `authorName`), o app usa
+português. A conversão acontece nos serviços: `src/tipos/api.ts` descreve o
+contrato cru da API, e `src/tipos/artigo.ts` o modelo do app. Nenhuma tela
+recebe campo em inglês.
+
+`coverImageUrl` chega relativo (`/media/uuid.png`) e sai absoluto em `urlCapa`,
+senão o `<Image>` não carrega.
+
+### Endereço da API
+
+`URL_BASE_API` é resolvido por plataforma, porque cada alvo enxerga a sua
+máquina de um jeito diferente:
+
+| Alvo | Host usado |
+|---|---|
+| Web (browser) | `localhost:8080` |
+| Emulador Android | `10.0.2.2:8080` (`localhost` lá é o próprio emulador) |
+| Celular físico (Expo Go) | IP da máquina na rede, lido do `hostUri` do Metro |
+
+Para apontar para outro ambiente, defina `EXPO_PUBLIC_API_URL` no `.env`.
+
+### Erros
+
+Toda resposta não-2xx virá como `ErroApi`, com a mensagem já pronta para a
+tela:
+
+```ts
+import { ErroApi, listarArtigos } from '@/src/servicos';
+
+try {
+  const artigos = await listarArtigos();
+} catch (erro) {
+  if (erro instanceof ErroApi && erro.ehFalhaDeConexao) {
+    // API fora do ar ou host errado — status 0
+  }
+}
+```
+
+| Campo | Descrição |
+|---|---|
+| `status` | Status HTTP, ou `0` quando a requisição nem chegou na API |
+| `message` | Mensagem da API (`{ "message": ... }`) ou um texto por status |
+| `errosPorCampo` | Só nos 400 de validação: `{ "email": "must not be blank" }` |
+| `ehFalhaDeConexao` | `true` quando `status === 0` |
 
 ---
 
@@ -303,7 +396,9 @@ houver backend, persistir token com `expo-secure-store` é a recomendação.
 - [ ] Guarda de rota: redirecionar para `/login` quando `!autenticado` em
   `(tabs)`
 - [ ] Botão "Sair" na tela Perfil consumindo `useUsuario().sair`
-- [ ] Persistência do usuário com `expo-secure-store`
-- [ ] Integração real do login/registro com API
+- [ ] Persistência do token com `expo-secure-store` (hoje só em memória)
+- [x] Integração real do login/registro com API
+- [ ] Tela de Conteúdos consumindo `listarArtigos()`
+- [ ] Renderizar `conteudoHtml` (lib de HTML ou WebView)
 - [ ] Implementar conteúdo das telas: Hoje, Ciclo, Conteúdos, Perfil
 - [ ] Modal de "adicionar registro" acionado pelo FAB central
